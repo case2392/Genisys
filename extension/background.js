@@ -22,7 +22,17 @@ async function getConfig() {
 async function getSessionId(host) {
   // The `sid` cookie on *.my.salesforce.com is the session token usable as Bearer.
   const cookie = await chrome.cookies.get({ url: `https://${host}`, name: "sid" });
-  return cookie ? cookie.value : null;
+  if (cookie && cookie.value) return cookie.value;
+  // Fallback: search all sid cookies and pick one whose domain matches.
+  const all = await chrome.cookies.getAll({ name: "sid" });
+  for (const c of all) {
+    if (c.domain && (host.endsWith(c.domain.replace(/^\./, "")) || c.domain.replace(/^\./, "") === host)) {
+      return c.value;
+    }
+  }
+  console.warn("[CallerID] No sid cookie found for", host, "— available sid cookies:",
+    all.map(c => c.domain));
+  return null;
 }
 
 // In-memory cache: phoneDigits -> { value: {name, sobject, id} | null, expires }
@@ -118,16 +128,23 @@ async function lookupPhone(tenDigit) {
   return value;
 }
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "LOOKUP_PHONE") {
     const ten = normalize(msg.phone);
+    console.log("[CallerID:bg] LOOKUP_PHONE", msg.phone, "->", ten, "from", sender.url);
     if (!ten || ten.length !== 10) {
       sendResponse({ ok: true, match: null });
       return false;
     }
     lookupPhone(ten).then(
-      (match) => sendResponse({ ok: true, match }),
-      (err) => sendResponse({ ok: false, error: String(err && err.message || err) })
+      (match) => {
+        console.log("[CallerID:bg] result", ten, match);
+        sendResponse({ ok: true, match });
+      },
+      (err) => {
+        console.warn("[CallerID:bg] error", ten, err);
+        sendResponse({ ok: false, error: String(err && err.message || err) });
+      }
     );
     return true; // async response
   }

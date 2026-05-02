@@ -13,8 +13,19 @@
     "https://*.my.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.salesforce.com/*",
+    "https://*.visualforce.com/*",
+    "https://*.vf.force.com/*",
+    "https://*.visual.force.com/*",
+    "https://*.salesforce-experience.com/*",
+    "https://*.salesforce-setup.com/*",
+    "https://*.cloudforce.com/*",
     "https://apps.mypurecloud.com/*",
-    "https://*.mypurecloud.com/*"
+    "https://*.mypurecloud.com/*",
+    "https://*.mypurecloud.ie/*",
+    "https://*.mypurecloud.de/*",
+    "https://*.mypurecloud.com.au/*",
+    "https://*.mypurecloud.jp/*",
+    "https://*.pure.cloud/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -24,8 +35,19 @@
     {
       "matches": [
         "https://*.lightning.force.com/*",
+        "https://*.force.com/*",
+        "https://*.salesforce.com/*",
+        "https://*.visualforce.com/*",
+        "https://*.vf.force.com/*",
+        "https://*.visual.force.com/*",
+        "https://*.cloudforce.com/*",
         "https://apps.mypurecloud.com/*",
-        "https://*.mypurecloud.com/*"
+        "https://*.mypurecloud.com/*",
+        "https://*.mypurecloud.ie/*",
+        "https://*.mypurecloud.de/*",
+        "https://*.mypurecloud.com.au/*",
+        "https://*.mypurecloud.jp/*",
+        "https://*.pure.cloud/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle",

@@ -70,13 +70,44 @@ the REST API.
 
 ## Troubleshooting
 
-**"No Salesforce session" error in service-worker console**
-You're not logged into the My Domain that's configured in options. Open
-`https://<your-host>.my.salesforce.com` in a tab to refresh the cookie.
+After loading, **always** click "Reload" on the extension card in
+`chrome://extensions` after pulling new code, then hard-reload the Salesforce
+tab.
 
-**Salesforce returns 401**
-The session expired. Log in again; the cookie refreshes automatically.
+### Step 1 — confirm the content script is running in the widget
 
-**Custom Loan object name is different**
-Edit the Objects JSON in options to use the correct API name (e.g.
-`Mortgage_Loan__c`) and field names.
+1. With Salesforce open, right-click directly on the green Genesys "Available"
+   bar → **Inspect**.
+2. In DevTools, switch to the **Console** tab.
+3. Use the frame selector (the dropdown at the top-left of the Console, often
+   showing "top") and pick the iframe whose URL includes either
+   `visualforce.com`, `vf.force.com`, or `mypurecloud.com`.
+4. You should see a line like `[CallerID] content script loaded in https://...`.
+   - If you don't, the iframe URL isn't covered by `manifest.json` matches.
+     Note the iframe's URL and add its host to `host_permissions` and
+     `content_scripts.matches`.
+
+### Step 2 — confirm the lookup is firing
+
+In the same iframe console, you should see no errors when a call rings. In the
+service-worker console (`chrome://extensions` → the extension → "service
+worker" link), you should see lines like:
+
+```
+[CallerID:bg] LOOKUP_PHONE tel:+14028533161 -> 4028533161 from https://...
+[CallerID:bg] result 4028533161 {name: "Manoucheka Pierre", sobject: "Lead", ...}
+```
+
+If you see `LOOKUP_PHONE` but no `result`, look for a "No sid cookie found"
+warning — you need to be logged into the My Domain configured in Options.
+
+### Common errors
+
+- **"No Salesforce session"** — Log into
+  `https://zillowhomeloans.my.salesforce.com` in the same Chrome profile.
+- **`SF 401`** — Session expired. Refresh Salesforce.
+- **`SF 400` for `Loan__c`** — Object/field name is wrong. Edit the Objects
+  JSON in Options (e.g. change to `Mortgage_Loan__c`, `Borrower_Phone__c`).
+- **Service worker has no log lines at all** — The content script isn't
+  reaching the background, which almost always means the content script isn't
+  running in the widget iframe. Do Step 1.
