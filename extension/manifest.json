@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Genesys Caller ID for Salesforce",
+  "version": "0.1.0",
+  "description": "Looks up incoming caller phone numbers in Salesforce (Lead, Contact, Loan__c) and injects the matched name into the Genesys Cloud softphone widget.",
+  "permissions": [
+    "storage",
+    "cookies",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.lightning.force.com/*",
+    "https://*.my.salesforce.com/*",
+    "https://*.force.com/*",
+    "https://*.salesforce.com/*",
+    "https://apps.mypurecloud.com/*",
+    "https://*.mypurecloud.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.lightning.force.com/*",
+        "https://apps.mypurecloud.com/*",
+        "https://*.mypurecloud.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "action": {
+    "default_title": "Genesys Caller ID"
+  }
+}
