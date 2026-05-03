@@ -3,6 +3,14 @@
 // up in Salesforce, and annotates the node with the matched record name.
 
 (() => {
+  // Only run inside iframes. The Genesys widget is rendered inside a Visualforce
+  // iframe; the top-level Salesforce page contains its own tel: links (Lead phone,
+  // DNC widget, etc.) that we must not annotate.
+  if (window.top === window.self) {
+    console.log("[CallerID] skipping top-level frame", location.href);
+    return;
+  }
+
   // Diagnostic: confirms the script actually loaded in this frame.
   // Open DevTools → Console (and use the frame selector to pick the Genesys iframe)
   // to see this line. If it never appears, the iframe URL isn't matched in manifest.json.
@@ -93,8 +101,22 @@
     });
   }
 
+  // Walks up to the row container so we can dedupe one badge per row per phone
+  // number. Voicemail rows render both `+13195050388` and `+1 319-505-0388`,
+  // which would otherwise both get annotated.
+  function findRowContainer(el) {
+    return (
+      el.closest(
+        "li, [role='listitem'], [role='row']," +
+          " [class*='conversation-summary'], [class*='conversation-item']," +
+          " [class*='interaction-summary'], [class*='interaction-list-item']," +
+          " [class*='history-item'], [class*='inbox-item']"
+      ) || el.parentElement
+    );
+  }
+
   // For the inbox / call-history list, find every text node containing a phone number
-  // and annotate its parent element. We dedupe per parent so we don't paint twice.
+  // and annotate its row container. We dedupe per (row container, phone).
   function scanTextNodes(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
@@ -102,22 +124,36 @@
         if (!PHONE_RE.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
+        if (parent.classList && parent.classList.contains(BADGE_CLASS)) return NodeFilter.FILTER_REJECT;
         if (parent.closest("." + BADGE_CLASS)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
-    const seen = new Set();
+    // Per-scan dedupe: row -> Set<phone>. Combined with the persistent
+    // data-callerid-phone-<phone> marker on the row this prevents double badging.
+    const annotatedThisScan = new WeakMap();
     while (walker.nextNode()) {
       const node = walker.currentNode;
       const phone = extractTenDigit(node.nodeValue);
       if (!phone) continue;
-      const parent = node.parentElement;
-      if (!parent) continue;
-      const key = parent;
-      if (seen.has(key)) continue;
-      seen.add(key);
+      const textParent = node.parentElement;
+      if (!textParent) continue;
+      const row = findRowContainer(textParent);
+      if (!row) continue;
+      const phonesAttr = `data-callerid-phone-${phone}`;
+      if (row.hasAttribute(phonesAttr)) continue;
+      let phones = annotatedThisScan.get(row);
+      if (!phones) {
+        phones = new Set();
+        annotatedThisScan.set(row, phones);
+      }
+      if (phones.has(phone)) continue;
+      phones.add(phone);
       lookup(phone).then((m) => {
-        if (m && m.name) annotate(parent, m.name);
+        if (m && m.name) {
+          row.setAttribute(phonesAttr, "1");
+          annotate(textParent, m.name);
+        }
       });
     }
   }
