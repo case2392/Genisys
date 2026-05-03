@@ -18,19 +18,52 @@ the REST API.
 
 ## Updating to a new version
 
-**Just replacing the files on disk is not enough — Chrome keeps the old build
-running until you tell it to reload.**
+If the version on the extension card in `chrome://extensions` doesn't match
+the version inside `extension/manifest.json` after you "update", then the
+files Chrome is reading from disk are NOT the ones you edited. Almost always
+this is one of two problems:
 
-1. Pull the latest code (or re-download/replace the `extension/` folder).
-2. Open `chrome://extensions`.
-3. On the **Genesys Caller ID for Salesforce** card, click the **circular
-   reload icon** (🔄) in the lower-right corner of the card. The version
-   number on the card will update.
-4. Hard-reload the Salesforce tab (`Ctrl+Shift+R`).
-5. To confirm which build is actually running: open DevTools on the Genesys
-   widget iframe and look for a console line like
-   `[CallerID v0.3.0] content script loaded in …`. If the version printed
-   there doesn't match `extension/manifest.json` on disk, repeat step 3.
+- **(a) You replaced files in a different folder than the one Chrome is
+  loading from.** When you downloaded a new copy from GitHub, it landed in a
+  fresh folder (e.g. `Downloads/Genisys-main/extension/`), but Chrome is
+  still loading from the original folder you picked the first time.
+- **(b) You didn't click the reload icon on the extension card after editing
+  the files.**
+
+### Foolproof update procedure
+
+1. Open `chrome://extensions`.
+2. Find the **Genesys Caller ID for Salesforce** card. Click **Details**.
+3. Look for the field labeled **"ID"** and below it **"Source"** with a path
+   like `C:\Users\you\Downloads\Genisys\extension`. **Write that path down.**
+   That is the only folder Chrome will read from.
+4. Replace the files in **that exact folder** with the new ones. The fastest
+   way:
+   - Open the new download.
+   - Copy `manifest.json`, `background.js`, `content.js`, `options.html`,
+     `options.js` over the existing files in the path from step 3.
+   - Open the path's `manifest.json` in Notepad / VS Code and confirm the
+     `"version"` line says `"0.5.0"`. If it doesn't, you copied to the wrong
+     folder.
+5. Back in `chrome://extensions`, click the **circular reload icon** (🔄) in
+   the lower-right corner of the extension card. The version on the card
+   should immediately change to `0.5.0`. If it doesn't, step 4 went to the
+   wrong folder.
+6. Hard-reload the Salesforce tab (`Ctrl+Shift+R`).
+7. Open DevTools on the Genesys widget iframe → Console. You should see:
+   `[CallerID v0.5.0] content script loaded in …`. The version printed here
+   must match the version on the card and the version in `manifest.json`. If
+   any three disagree, the reload didn't pick up your changes — repeat from
+   step 3.
+
+### If the version on the card refuses to change
+
+The cleanest reset:
+
+1. On the extension card, click **Remove** to delete it from Chrome.
+2. Click **Load unpacked** and select your **new** `extension/` folder
+   (the one with `version: 0.5.0`).
+3. Re-open Options and re-enter your config.
 
 ## First-time setup
 
