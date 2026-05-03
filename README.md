@@ -16,6 +16,22 @@ the REST API.
 3. Click **Load unpacked** and select the `extension/` folder in this repo.
 4. Pin the extension if you want quick access to its options page.
 
+## Updating to a new version
+
+**Just replacing the files on disk is not enough — Chrome keeps the old build
+running until you tell it to reload.**
+
+1. Pull the latest code (or re-download/replace the `extension/` folder).
+2. Open `chrome://extensions`.
+3. On the **Genesys Caller ID for Salesforce** card, click the **circular
+   reload icon** (🔄) in the lower-right corner of the card. The version
+   number on the card will update.
+4. Hard-reload the Salesforce tab (`Ctrl+Shift+R`).
+5. To confirm which build is actually running: open DevTools on the Genesys
+   widget iframe and look for a console line like
+   `[CallerID v0.3.0] content script loaded in …`. If the version printed
+   there doesn't match `extension/manifest.json` on disk, repeat step 3.
+
 ## First-time setup
 
 1. Log into Salesforce normally in the same Chrome profile

@@ -2,6 +2,9 @@
 // Auth strategy: read the `sid` cookie from the My Domain (.my.salesforce.com) and use
 // it as a Bearer token against the REST API on the same host. No Connected App needed.
 
+const VERSION = (chrome.runtime.getManifest && chrome.runtime.getManifest().version) || "?";
+console.log(`[CallerID:bg v${VERSION}] service worker started`);
+
 const DEFAULTS = {
   myDomainHost: "zillowhomeloans.my.salesforce.com",
   apiVersion: "v59.0",

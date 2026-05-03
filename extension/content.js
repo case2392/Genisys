@@ -11,10 +11,12 @@
     return;
   }
 
-  // Diagnostic: confirms the script actually loaded in this frame.
-  // Open DevTools → Console (and use the frame selector to pick the Genesys iframe)
-  // to see this line. If it never appears, the iframe URL isn't matched in manifest.json.
-  console.log("[CallerID] content script loaded in", location.href);
+  // Diagnostic: confirms the script actually loaded in this frame and which version.
+  // If the version logged here is older than the manifest.json on disk, Chrome is
+  // serving a stale build — go to chrome://extensions and click the reload icon
+  // on the extension's card.
+  const VERSION = (chrome.runtime.getManifest && chrome.runtime.getManifest().version) || "?";
+  console.log(`[CallerID v${VERSION}] content script loaded in`, location.href);
 
   const PHONE_RE = /(?:tel:)?\+?1?[\s().-]*(\d{3})[\s().-]*(\d{3})[\s().-]*(\d{4})/;
   const ANNOTATED_ATTR = "data-callerid-name";
@@ -108,9 +110,11 @@
     return (
       el.closest(
         "li, [role='listitem'], [role='row']," +
+          " .interactions, .interaction-selection, .center-container," +
           " [class*='conversation-summary'], [class*='conversation-item']," +
           " [class*='interaction-summary'], [class*='interaction-list-item']," +
-          " [class*='history-item'], [class*='inbox-item']"
+          " [class*='history-item'], [class*='inbox-item']," +
+          " [class*='new-interaction']"
       ) || el.parentElement
     );
   }
