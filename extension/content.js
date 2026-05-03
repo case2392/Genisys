@@ -79,29 +79,10 @@
 
   // ---- DOM scanning ----------------------------------------------------------
 
-  function scanActiveInteraction(root) {
-    const sels = [
-      ".interaction-data.call-remotename",
-      ".interaction-data.salesforce-displayaddress",
-      ".interaction-name"
-    ];
-    for (const sel of sels) {
-      root.querySelectorAll(sel).forEach((el) => {
-        const phone = extractTenDigit(el.textContent);
-        if (!phone) return;
-        lookup(phone).then((m) => {
-          if (m && m.name) annotate(el, m.name);
-        });
-      });
-    }
-    root.querySelectorAll("[aria-label*='tel:']").forEach((el) => {
-      const phone = extractTenDigit(el.getAttribute("aria-label"));
-      if (!phone) return;
-      lookup(phone).then((m) => {
-        if (m && m.name) annotate(el, m.name);
-      });
-    });
-  }
+  // Skip text nodes that aren't worth annotating: Genesys repeats the active
+  // call's number in a "New Interaction: +1..." footer; one badge in the green
+  // active-call box is enough.
+  const SKIP_TEXT_RE = /new interaction\s*:/i;
 
   // Walks up to the row container so we can dedupe one badge per row per phone
   // number. Voicemail rows render both `+13195050388` and `+1 319-505-0388`,
@@ -125,6 +106,7 @@
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+        if (SKIP_TEXT_RE.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
         if (!PHONE_RE.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
@@ -169,7 +151,6 @@
     setTimeout(() => {
       scheduled = false;
       try {
-        scanActiveInteraction(document);
         scanTextNodes(document.body || document.documentElement);
       } catch (e) {
         console.warn("[CallerID] scan failed", e);
